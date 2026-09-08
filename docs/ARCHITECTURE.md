@@ -65,6 +65,11 @@ Rules (enforced by convention, see `CONTRIBUTING.md`): `domain` and `validation`
 2. Per hub, `planRelayRoutes()` (`@farmit/logistics`) capacity-batches pickups (1200 kg/vehicle) into **nearest-neighbour + 2-opt** farm-gate tours, then one bulk line-haul per hub to the Jayanagar dark store (ADR-0007).
 3. The response reports consolidated vs one-truck-per-farmer distance and the food-miles-saved percentage (~50% on the demo batch); the operator "Logistics desk" view renders stop sequences.
 
+### 6. Escrow & QR handshake (`POST/GET /api/escrow`, `GET /api/escrow/qr`)
+1. Reservation **holds** escrow against the server-persisted immutable snapshot (`lib/snapshots.ts`) with the planned split: farmer / miller (milling+QA) / transporters (freight legs) / platform (10%, ADR-0008) / GST.
+2. Dispatch to in-transit generates a random `FARMIT-XXXXXXXX` delivery code, rendered as an SVG QR (`qrcode`, ADR-0009).
+3. **Release requires the code** — the verified handshake marks the order delivered and pays out the split; wrong codes, double releases and holds without snapshots all fail closed. Demo-local store; the `EscrowRecord` shape is the payment-gateway integration contract.
+
 ## Pricing model (single source: `packages/pricing`)
 
 | Concept | Value | Enforced |
@@ -83,6 +88,8 @@ The consumer receipt itemises every component — this is the product's core tru
 | Lot catalog | `lib/catalog.ts` in-memory array | Supabase `farm_lots` + PostGIS geography | ADR-0003, ADR-0004 |
 | Auth/sessions | localStorage demo session | Supabase email/password + `profiles.role` | schema + RLS already in `001_farmit_core.sql` |
 | Orders | in-memory demo handler | Supabase `orders` keyed to `quote_snapshots` | status enum already in schema |
+| Quote snapshots | in-memory (`lib/snapshots.ts`) | Supabase `quote_snapshots` (immutable JSONB) | persisted server-side since Phase 3 |
+| Escrow | in-memory (`lib/escrow.ts`) | payment-gateway escrow/split settlement | `EscrowRecord` is the contract (ADR-0009) |
 | Demand history | seeded 16-week demo series (`lib/demand-history.ts`) | real order history from `orders` | forecast API shape unchanged (ADR-0006) |
 | FPO hubs / routing | coordinates in `lib/demand-history.ts` + haversine 2-opt | PostGIS `ST_DWithin` hub assignment; OR-Tools for large batches | ADR-0007 swap point |
 | Geofence | haversine in JS over all lots | PostGIS `ST_DWithin` with spatial index | required beyond ~10k lots |

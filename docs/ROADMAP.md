@@ -15,11 +15,11 @@ FarmIt is built in phases against **SIH 2026 problem statement 26033** ("Multipl
 | AI demand forecasting (explicit PS) | 2 | ✅ Explainable weekly forecast (WMA + trend + seasonal index) with supply check |
 | Route optimization (explicit PS) | 2 | ✅ Consolidated relay routes; 49.7% food-miles saved on the demo batch |
 | FPO grouping | 2 | 🚧 Nearest-hub assignment derived from coordinates; operator-managed FPO entity pending |
-| Escrow payout split on delivery (deck step 4) | 3 | ❌ Payments disabled in v1 |
-| QR-code delivery handshake | 3 | ❌ |
-| Bulk buyers (B2B channel) | 3–4 | ❌ |
+| Escrow payout split on delivery (deck step 4) | 3 | ✅ Simulated escrow lifecycle; split released on QR handshake, verified balanced |
+| QR-code delivery handshake | 3 | ✅ Server-rendered SVG QR + code-verified release |
+| Bulk buyers (B2B channel) | 4 | ❌ Moved from Phase 3 to keep it focused |
 | Real auth, Supabase wiring | 4 | 🚧 Schema + RLS written, not wired |
-| Live audit ledger ("see who is paid") | 3 | 🚧 Receipt exists; escrow ledger doesn't |
+| Live audit ledger ("see who is paid") | 3 | ✅ Ledger rows with escrow status, visible from reservation to release |
 
 Status legend: ✅ implemented · 🚧 partial · ❌ not started
 
@@ -36,11 +36,12 @@ Multi-farmer server-side catalog, 100 km geofence scan API, farmer lot onboardin
 2. ✅ **Route optimization** — FPO-hub two-relay plans (nearest-neighbour + 2-opt, capacity-batched) with food-miles-saved metrics and an operator logistics desk; ADR-0007.
 3. 🚧 FPO/producer-group entity in the catalog (nearest-hub assignment shipped; operator-managed grouping in Phase 4). Log: [`PHASE-2-ai-forecasting-routing.md`](phases/PHASE-2-ai-forecasting-routing.md)
 
-### Phase 3 — Trust: escrow & delivery verification
-1. Simulated escrow ledger: on delivery confirmation, split the snapshot total into farmer / mill / transporter / platform entries.
-2. QR handshake at doorstep (generate on dispatch, scan to confirm) triggering the split.
-3. Live audit ledger view ("see exactly what the farmer, driver and miller are paid").
-4. Align the platform-fee model with the deck's flat 10% transaction fee (open decision — currently flat ₹35 + 5% tax).
+### Phase 3 — Trust: escrow & delivery verification (v0.4.0) ✅
+1. ✅ **Escrow ledger** — held → in-transit → released, split computed from the immutable server snapshot (ADR-0009).
+2. ✅ **QR handshake** — server-rendered SVG QR, code-verified release; wrong code and double release fail closed.
+3. ✅ **Live audit ledger** — consumer-facing split rows (farmer / miller / transporters / platform / GST) with status.
+4. ✅ **10% platform-fee model** — deck-aligned engine economics (ADR-0008); demo total ₹999.50 vs slide's ₹946 (delta = MSP-floored payout).
+5. → Bulk-buyer (B2B) tier moved to Phase 4. Log: [`PHASE-3-escrow-qr-audit.md`](phases/PHASE-3-escrow-qr-audit.md)
 
 ### Phase 4 — Production hardening
 1. Wire routes to Supabase (auth, farm_lots, quote_snapshots, orders); replace demo-local stores.
@@ -50,7 +51,7 @@ Multi-farmer server-side catalog, 100 km geofence scan API, farmer lot onboardin
 
 ## Decision backlog (open questions)
 
-- Platform-fee model: flat ₹/order (v1) vs deck's 10% of farmer payout — **scheduled for Phase 3** (deferred from Phase 2 by decision, 2026-09-08).
-- Escrow partner: payment-gateway split settlement vs UPI-centric flow; compliance owner unclear — needed for Phase 3 credibility.
+- Platform-fee model: flat ₹/order (v1) vs deck's 10% of farmer payout — ✅ **resolved in Phase 3**: 10% of cost of goods + logistics (ADR-0008).
+- Escrow partner: payment-gateway split settlement vs UPI-centric flow; compliance owner unclear — the demo's escrow record shape (ADR-0009) is the integration contract.
 - Mapping provider for consumer-facing distance/route visuals (demo uses pure numbers, no tiles).
 - Forecast cold-start policy for real deployments with < 8 weeks of history (`forecastDemand` currently requires two full seasonal cycles).

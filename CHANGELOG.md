@@ -2,6 +2,23 @@
 
 All notable changes to FarmIt are documented in this file. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions are phase-based semver (`MAJOR.MINOR.PATCH` → pilot/phase.feature.fix). Every version links to its phase log in `docs/phases/`.
 
+## [0.4.0] — 2026-09-08 — Phase 3: Escrow, QR Handshake & 10% Fee Model
+
+Phase log: [`docs/phases/PHASE-3-escrow-qr-audit.md`](docs/phases/PHASE-3-escrow-qr-audit.md)
+
+### Added
+- Simulated escrow lifecycle (`held → in_transit → released`) in `apps/web/lib/escrow.ts`, keyed to server-persisted immutable snapshots (`lib/snapshots.ts`) — splits are never computed from client payloads (ADR-0009).
+- `POST/GET /api/escrow` — hold (idempotent, planned split), dispatch (generates `FARMIT-XXXXXXXX` delivery code), release (code required), status lookup; all guards fail closed.
+- `GET /api/escrow/qr?code=…` — server-rendered SVG doorstep QR (`qrcode` — first new runtime dependency, app-only).
+- Consumer **audit ledger** box: farmer / miller / transporters / platform / GST rows with escrow status pill, visible from reservation through release.
+- Doorstep QR handshake UI with a "simulate courier scan" release button.
+- ADR-0008 (10% fee model) and ADR-0009 (simulated escrow).
+
+### Changed
+- **Breaking (API):** `QuoteInput.platformCharge` removed. `@farmit/pricing` now computes the platform fee as **10% of cost of goods + logistics** (`PLATFORM_FEE_RATE`), aligning the engine with the pitch's economics slide (ADR-0008). GST stays an operator input, default 0.
+- Demo operator defaults retuned (milling ₹4/kg, ₹100 freight, no GST) → demo total ₹999.50 with a ₹728.64 MSP-floored farmer payout.
+- Receipt labels ("FarmIt fee · 10%"; GST row only when set) and operator guardrail copy updated.
+
 ## [0.3.0] — 2026-09-08 — Phase 2: AI Demand Forecasting & Route Optimization
 
 Phase log: [`docs/phases/PHASE-2-ai-forecasting-routing.md`](docs/phases/PHASE-2-ai-forecasting-routing.md)

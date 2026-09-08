@@ -45,6 +45,8 @@ The current API route handlers are intentionally demo-local. Before a pilot, rep
 - `GET /api/lots?lat=…&lng=…` — server-side geofence scan. Returns every catalog lot annotated with `distanceKm` and `withinGeofence` (100 km radius, nearest first) plus `outsideCount` for lots the food-miles guardrail hides. Without query params it scans from the Jayanagar hub.
 - `POST /api/lots` — lists a new farmer lot. Validates the MSP floor (₹24.41/kg), the 29.85 kg minimum (20 kg rice at 67% yield), and the coordinates server-side.
 - `POST /api/quote` — publishes a fixed snapshot for a `lotId`. The lot is resolved from the server-side catalog, so clients cannot spoof farmer payouts; unknown lots return 404.
+- `GET /api/escrow` / `POST /api/escrow` — escrow lifecycle (`hold` | `dispatch` | `release`) keyed to published snapshots; release requires the doorstep delivery code.
+- `GET /api/escrow/qr?code=…` — server-rendered SVG QR for the doorstep handshake.
 - `GET /api/forecast?horizon=1..4` — explainable weekly demand forecast (history, point + confidence band, method metadata) plus the geofenced supply check that powers the consumer nudge.
 - `POST /api/routes` — consolidated FPO-hub relay plan for open orders (farm-gate pickup tours + one bulk line-haul per hub) with consolidated-vs-individual food-miles metrics; accepts an explicit `orders[]` override.
 
