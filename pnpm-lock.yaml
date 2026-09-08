@@ -13,6 +13,12 @@ importers:
       '@farmit/domain':
         specifier: workspace:*
         version: link:../../packages/domain
+      '@farmit/forecast':
+        specifier: workspace:*
+        version: link:../../packages/forecast
+      '@farmit/logistics':
+        specifier: workspace:*
+        version: link:../../packages/logistics
       '@farmit/pricing':
         specifier: workspace:*
         version: link:../../packages/pricing
@@ -52,6 +58,21 @@ importers:
         version: link:../domain
 
   packages/domain: {}
+
+  packages/forecast:
+    dependencies:
+      '@farmit/domain':
+        specifier: workspace:*
+        version: link:../domain
+
+  packages/logistics:
+    dependencies:
+      '@farmit/domain':
+        specifier: workspace:*
+        version: link:../domain
+      '@farmit/pricing':
+        specifier: workspace:*
+        version: link:../pricing
 
   packages/pricing:
     dependencies:

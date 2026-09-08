@@ -29,3 +29,25 @@ select:focus { border-color: var(--orange); }
 .lot-meta b { color: #54705f; font-weight: 600; }
 .geofence-note { max-width: 940px; margin: 0 0 26px; color: var(--ink-soft); font: 10px 'DM Mono', monospace; }
 @media (max-width: 480px) { .market-bar { flex-direction: column; gap: 4px; } .market-grid { grid-template-columns: 1fr 1fr; } }
+
+/* ── Phase 2: demand outlook & logistics desk ───────────────────── */
+.demand-card { max-width: 940px; margin-top: 18px; padding: 22px; border: 1px solid var(--line); background: var(--paper); }
+.demand-head { display: flex; justify-content: space-between; align-items: baseline; gap: 15px; }
+.demand-head h2 { margin: 6px 0 0; font: 600 22px Fraunces, serif; letter-spacing: -.4px; }
+.demand-head h3 { margin: 0; font: 600 17px Fraunces, serif; }
+.demand-stats { display: flex; flex-wrap: wrap; gap: 28px; margin-top: 16px; }
+.demand-stats b { display: block; font: 700 21px Fraunces, serif; }
+.demand-stats b small { font: italic 12px Fraunces, serif; color: var(--ink-soft); }
+.demand-stats span { color: var(--ink-soft); font: 10px 'DM Mono', monospace; }
+.spark { display: block; width: 100%; max-width: 340px; height: 64px; margin-top: 14px; }
+.demand-note { max-width: 940px; margin: 0 0 26px; padding: 9px 12px; font: 10px/1.5 'DM Mono', monospace; }
+.demand-note.tight { color: #7b5a10; background: #f7e6af; }
+.demand-note.ok { color: #315e36; background: #e1efd8; }
+.logistics-summary { display: grid; grid-template-columns: repeat(4, minmax(130px, 1fr)); gap: 12px; max-width: 940px; margin-bottom: 14px; }
+.logistics-summary div { padding: 15px; border: 1px solid var(--line); background: var(--paper); }
+.logistics-summary b { display: block; margin-bottom: 5px; font: 700 23px Fraunces, serif; }
+.logistics-summary span { color: var(--ink-soft); font: 10px 'DM Mono', monospace; }
+.route-card { max-width: 940px; margin-bottom: 12px; padding: 17px; border: 1px solid var(--line); background: var(--paper); }
+.stop-row { display: flex; justify-content: space-between; gap: 12px; margin-top: 9px; padding-top: 9px; border-top: 1px dashed var(--line); color: var(--ink-soft); font-size: 11px; }
+.stop-row strong { color: #54705f; font-weight: 600; font: 10px 'DM Mono', monospace; }
+@media (max-width: 850px) { .logistics-summary { grid-template-columns: 1fr 1fr; } }

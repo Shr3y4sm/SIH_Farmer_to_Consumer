@@ -9,6 +9,8 @@
   },
   "dependencies": {
     "@farmit/domain": "workspace:*",
+    "@farmit/forecast": "workspace:*",
+    "@farmit/logistics": "workspace:*",
     "@farmit/pricing": "workspace:*",
     "@farmit/translations": "workspace:*",
     "@farmit/validation": "workspace:*",
