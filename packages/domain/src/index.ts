@@ -10,6 +10,22 @@ export type FarmLot = {
   floorPayoutPerKg: number;
   harvestDate: string;
   qualityNote: string;
+  latitude: number;
+  longitude: number;
+};
+
+/** A farm lot annotated with its great-circle distance from the consumer hub. */
+export type GeofenceLot = FarmLot & {
+  distanceKm: number;
+  withinGeofence: boolean;
+};
+
+/** A pickup/delivery hub the marketplace scans from. */
+export type ConsumerLocation = {
+  id: string;
+  label: string;
+  latitude: number;
+  longitude: number;
 };
 
 export type QuoteInput = {
