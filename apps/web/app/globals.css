@@ -12,4 +12,20 @@
 .notice { display: flex; gap: 10px; align-items: center; max-width: 940px; margin-top: 18px; padding: 12px 14px; color: #315e36; background: #e1efd8; font-size: 12px; } .notice span { font-weight: 700; } footer { display: flex; justify-content: space-between; padding: 18px 8vw; border-top: 1px solid var(--line); color: var(--ink-soft); font: 10px 'DM Mono', monospace; }
 .reserved-box, .declined-box { display: grid; gap: 9px; margin-top: 18px; padding: 15px; background: #eef5e9; color: #315e36; font-size: 12px; } .reserved-box span { color: var(--ink-soft); font-size: 11px; line-height: 1.45; } .reserved-box .primary-button { margin-top: 5px; } .declined-box { background: #f7e9df; color: #8a4b35; } .form-footnote { margin: 18px 0 0; } .account-card { max-width: 600px; padding: 25px; } .account-card .profile { padding-bottom: 20px; } .account-row { display: flex; justify-content: space-between; gap: 20px; padding: 17px 0; border-bottom: 1px solid var(--line); color: var(--ink-soft); font-size: 12px; } .account-row strong { color: var(--ink); font-weight: 600; } .account-card .text-button { margin-top: 20px; padding: 0; }
 @media (max-width: 850px) { .hero { padding: 42px 6vw 34px; } .route-illustration { display: none; } .workspace { display: block; } .sidebar { display: none; } .content { padding: 25px 6vw 45px; } .role-switcher { margin-bottom: 35px; overflow-x: auto; } .panel-grid, .operator-layout, .consumer-layout { grid-template-columns: 1fr; } .timeline-card { order: 2; } footer { gap: 12px; flex-wrap: wrap; padding: 17px 6vw; } }
-@media (max-width: 480px) { .topbar { padding: 0 6vw; } .topbar-actions { font-size: 0; } .hero { padding-top: 34px; } h1 { font-size: 48px; } .page-heading h2 { font-size: 31px; } .form-card, .offer-card, .timeline-card, .insight-card { padding: 20px; } .form-row { grid-template-columns: 1fr; gap: 0; } .role-switcher button { padding: 8px 9px; } .role-switcher .language { margin-left: 5px; } }
+@media (max-width: 480px) { .topbar { padding: 0 6vw; } .topbar-actions { font-size: 0; } .hero { padding-top: 34px; } h1 { font-size: 48px; } .page-heading h2 { font-size: 31px; } .form-card, .offer-card, .timeline-card, .insight-card { padding: 20px; } .form-row { grid-template-columns: 1fr; gap: 0; } .role-switcher button { padding: 8px 9px; } .role-switcher .language { margin-left: 5px; } }/* ── Phase 1: geofenced marketplace ─────────────────────────────── */
+select { width: 100%; margin-top: 7px; padding: 11px 10px; border: 1px solid var(--line); border-radius: 0; outline: 0; color: var(--ink); background: #fbfaf5; font-size: 13px; }
+select:focus { border-color: var(--orange); }
+.market-bar { display: flex; align-items: baseline; justify-content: space-between; gap: 15px; max-width: 940px; margin-bottom: 14px; }
+.market-bar h2 { margin: 0; font: 600 24px Fraunces, serif; letter-spacing: -.5px; }
+.market-bar span { color: var(--ink-soft); font: 10px 'DM Mono', monospace; }
+.market-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(205px, 1fr)); gap: 12px; max-width: 940px; margin-bottom: 12px; }
+.lot-card { position: relative; display: grid; gap: 5px; align-content: start; padding: 15px; border: 1px solid var(--line); background: var(--paper); text-align: left; }
+.lot-card:hover { border-color: var(--ink); }
+.lot-card.selected { border-color: var(--orange); box-shadow: inset 0 0 0 1px var(--orange); }
+.lot-card strong { font: 600 15px Fraunces, serif; letter-spacing: -.2px; }
+.lot-card small { color: var(--ink-soft); font-size: 10px; line-height: 1.4; }
+.distance-badge { position: absolute; top: 13px; right: 13px; color: var(--orange); font: 10px 'DM Mono', monospace; }
+.lot-meta { display: flex; justify-content: space-between; gap: 10px; margin-top: 4px; padding-top: 9px; border-top: 1px dashed var(--line); color: var(--ink-soft); font: 10px 'DM Mono', monospace; }
+.lot-meta b { color: #54705f; font-weight: 600; }
+.geofence-note { max-width: 940px; margin: 0 0 26px; color: var(--ink-soft); font: 10px 'DM Mono', monospace; }
+@media (max-width: 480px) { .market-bar { flex-direction: column; gap: 4px; } .market-grid { grid-template-columns: 1fr 1fr; } }
