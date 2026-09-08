@@ -51,3 +51,16 @@ select:focus { border-color: var(--orange); }
 .stop-row { display: flex; justify-content: space-between; gap: 12px; margin-top: 9px; padding-top: 9px; border-top: 1px dashed var(--line); color: var(--ink-soft); font-size: 11px; }
 .stop-row strong { color: #54705f; font-weight: 600; font: 10px 'DM Mono', monospace; }
 @media (max-width: 850px) { .logistics-summary { grid-template-columns: 1fr 1fr; } }
+
+/* ── Phase 3: escrow audit ledger & QR handshake ────────────────── */
+.ledger-box { display: grid; gap: 8px; margin-top: 14px; padding: 13px; background: #f0eadb; border-top: 2px solid var(--orange); }
+.ledger-head { display: flex; justify-content: space-between; align-items: center; }
+.ledger-head b { font: 600 13px Fraunces, serif; }
+.ledger-row { display: flex; justify-content: space-between; gap: 12px; color: var(--ink-soft); font-size: 11px; }
+.ledger-row strong { color: var(--ink); font-weight: 600; }
+.ledger-row.total { margin-top: 3px; padding-top: 8px; border-top: 1px solid #dedfd6; color: var(--ink); font-weight: 600; }
+.ledger-row.total strong { font: 700 14px Fraunces, serif; }
+.qr-box { display: flex; gap: 14px; align-items: center; margin-top: 12px; padding: 12px; background: var(--paper); border: 1px dashed var(--orange); }
+.qr-box img { width: 92px; height: 92px; flex: none; }
+.qr-box strong { display: block; font-size: 12px; }
+.qr-box small { display: block; margin-top: 4px; color: var(--ink-soft); font: 10px 'DM Mono', monospace; }
