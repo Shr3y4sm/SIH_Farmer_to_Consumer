@@ -34,7 +34,6 @@ export type QuoteInput = {
   farmToMill: number;
   weeklyLineHaul: number;
   lastMile: number;
-  platformCharge: number;
   taxRate: number;
   expiresInHours: number;
 };
@@ -66,4 +65,29 @@ export type Order = {
   status: OrderStatus;
   consumerName: string;
   createdAt: string;
+};
+
+export type EscrowStatus = "held" | "in_transit" | "released";
+
+/** Where every rupee of a released escrow goes — the live audit ledger. */
+export type EscrowSplit = {
+  farmer: number;
+  miller: number;
+  transporters: number;
+  platform: number;
+  tax: number;
+};
+
+export type EscrowRecord = {
+  quoteId: string;
+  lotId: string;
+  total: number;
+  status: EscrowStatus;
+  heldAt: string;
+  dispatchedAt: string | null;
+  releasedAt: string | null;
+  /** Secret inside the doorstep QR; required to release the split. */
+  deliveryCode: string | null;
+  /** Planned split while held; final once released. */
+  split: EscrowSplit | null;
 };

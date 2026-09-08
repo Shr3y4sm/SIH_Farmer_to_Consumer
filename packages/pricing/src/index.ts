@@ -3,6 +3,8 @@ import type { FarmLot, GeofenceLot, QuoteInput, QuoteSnapshot } from "@farmit/do
 export const DEMO_YIELD_RATE = 0.67;
 export const DEMO_PADDY_RATE = 24.41;
 export const GEOFENCE_RADIUS_KM = 100;
+/** Deck-aligned transaction fee: 10% of the cost of goods + logistics (ADR-0008). */
+export const PLATFORM_FEE_RATE = 0.1;
 
 const rupees = (value: number) => Math.round(value * 100) / 100;
 
@@ -12,9 +14,9 @@ export function calculateQuote(lot: FarmLot, input: QuoteInput, now = new Date()
   const paddyPayout = rupees(paddyKg * Math.max(lot.floorPayoutPerKg, DEMO_PADDY_RATE));
   const milling = rupees(input.millingPerKg * riceKg);
   const packagingQa = rupees(input.packagingQaPerKg * riceKg);
-  const taxableSubtotal = paddyPayout + milling + packagingQa + input.farmToMill + input.weeklyLineHaul + input.lastMile;
-  const platformCharge = rupees(input.platformCharge);
-  const tax = rupees(taxableSubtotal * input.taxRate);
+  const subtotal = paddyPayout + milling + packagingQa + input.farmToMill + input.weeklyLineHaul + input.lastMile;
+  const platformCharge = rupees(subtotal * PLATFORM_FEE_RATE);
+  const tax = rupees(subtotal * input.taxRate);
 
   return {
     id: `qs_${now.getTime()}`,
@@ -33,7 +35,7 @@ export function calculateQuote(lot: FarmLot, input: QuoteInput, now = new Date()
     lastMile: rupees(input.lastMile),
     platformCharge,
     tax,
-    total: rupees(taxableSubtotal + platformCharge + tax),
+    total: rupees(subtotal + platformCharge + tax),
     weeklyRun: "Every Saturday · 8:00–11:00 AM",
   };
 }
