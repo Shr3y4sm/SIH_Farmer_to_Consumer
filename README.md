@@ -31,6 +31,8 @@ The production build and typecheck can be run with `corepack pnpm build` and `co
 - `apps/web/lib/catalog.ts`: multi-farmer lot catalog (in-memory; Supabase replaces it at pilot)
 - `packages/domain`: shared records and role/status contracts
 - `packages/pricing`: server-side yield conversion, rupee rounding, quote calculation, and 100 km haversine geofence
+- `packages/forecast`: explainable weekly demand forecasting (weighted MA + trend + seasonal index)
+- `packages/logistics`: FPO-hub relay route planning (nearest-neighbour + 2-opt, food-miles-saved metric)
 - `packages/validation`: MSP floor payout, minimum-lot, and coordinate guards
 - `packages/translations`: English/Kannada UI copy
 - `packages/api-client`: typed fetch helpers for the marketplace endpoints
@@ -43,6 +45,8 @@ The current API route handlers are intentionally demo-local. Before a pilot, rep
 - `GET /api/lots?lat=…&lng=…` — server-side geofence scan. Returns every catalog lot annotated with `distanceKm` and `withinGeofence` (100 km radius, nearest first) plus `outsideCount` for lots the food-miles guardrail hides. Without query params it scans from the Jayanagar hub.
 - `POST /api/lots` — lists a new farmer lot. Validates the MSP floor (₹24.41/kg), the 29.85 kg minimum (20 kg rice at 67% yield), and the coordinates server-side.
 - `POST /api/quote` — publishes a fixed snapshot for a `lotId`. The lot is resolved from the server-side catalog, so clients cannot spoof farmer payouts; unknown lots return 404.
+- `GET /api/forecast?horizon=1..4` — explainable weekly demand forecast (history, point + confidence band, method metadata) plus the geofenced supply check that powers the consumer nudge.
+- `POST /api/routes` — consolidated FPO-hub relay plan for open orders (farm-gate pickup tours + one bulk line-haul per hub) with consolidated-vs-individual food-miles metrics; accepts an explicit `orders[]` override.
 
 ## Pricing guardrails
 

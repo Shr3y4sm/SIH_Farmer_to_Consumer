@@ -2,6 +2,22 @@
 
 All notable changes to FarmIt are documented in this file. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions are phase-based semver (`MAJOR.MINOR.PATCH` → pilot/phase.feature.fix). Every version links to its phase log in `docs/phases/`.
 
+## [0.3.0] — 2026-09-08 — Phase 2: AI Demand Forecasting & Route Optimization
+
+Phase log: [`docs/phases/PHASE-2-ai-forecasting-routing.md`](docs/phases/PHASE-2-ai-forecasting-routing.md)
+
+### Added
+- `@farmit/forecast` — explainable weekly demand forecasting: weighted moving average + damped linear trend + 4-week seasonal index, MAPE-sized confidence band; pure and deterministic (ADR-0006).
+- `@farmit/logistics` — relay route planning: nearest-hub assignment, capacity-batched nearest-neighbour + 2-opt pickup tours, one bulk line-haul per FPO hub, food-miles-saved metric (ADR-0007).
+- `GET /api/forecast?horizon=1..4` — demand history, forecast with bands, and geofenced supply check.
+- `POST /api/routes` — consolidated relay plan for open orders (seeded demo batch by default).
+- Deterministic 16-week demo demand history and FPO-hub/dark-store coordinates (`apps/web/lib/demand-history.ts`).
+- Operator UI: "Demand outlook" sparkline card and a new "Logistics" desk view with per-relay stop sequences.
+- Consumer UI: demand-vs-supply nudge under the marketplace grid ("reserve early" / "supply is comfortable").
+
+### Deferred
+- Platform-fee model alignment with the deck (10% flat) — moved to Phase 3 per the roadmap's open decisions.
+
 ## [0.2.0] — 2026-09-08 — Phase 1: Geofenced Marketplace
 
 Phase log: [`docs/phases/PHASE-1-marketplace.md`](docs/phases/PHASE-1-marketplace.md)

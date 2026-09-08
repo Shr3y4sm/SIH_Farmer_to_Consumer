@@ -32,11 +32,12 @@ FarmIt is a farmer-to-consumer marketplace for staple grains. This document desc
 ```
 validation ─┐
 domain ◄────┤ pricing          (pure server logic; no React, no I/O)
-            └ api-client       (typed fetch helpers)
-apps/web ─── imports all of the above + owns routes, catalog, UI
+            ├ forecast         (explainable demand model; depends on domain)
+            └ logistics        (relay route planning; depends on pricing for haversine)
+apps/web ─── imports all of the above + owns routes, catalog, demo data, UI
 ```
 
-Rules (enforced by convention, see `CONTRIBUTING.md`): `domain` and `validation` depend on nothing; `pricing` depends only on `domain`; packages never import app code; shared record types exist **only** in `packages/domain`.
+Rules (enforced by convention, see `CONTRIBUTING.md`): `domain` and `validation` depend on nothing; `pricing` depends only on `domain`; `forecast` on `domain`; `logistics` on `pricing` + `domain`; packages never import app code; shared record types exist **only** in `packages/domain`.
 
 ## Key flows
 
@@ -53,6 +54,16 @@ Rules (enforced by convention, see `CONTRIBUTING.md`): `domain` and `validation`
 
 ### 3. Order lifecycle (`POST/PATCH /api/orders`, demo-local)
 `reserved → milling → in_transit → delivered`. Reservations create no payment; delivery advance is simulated. The escrow split + QR verification from the pitch are Phase 3 (see `docs/ROADMAP.md`).
+
+### 4. Demand forecast (`GET /api/forecast`)
+1. A deterministic 16-week seeded demand history (`lib/demand-history.ts`, ADR-0006) feeds `forecastDemand()` in `@farmit/forecast`: weighted moving average + damped trend + 4-week seasonal index, MAPE-sized confidence band.
+2. Supply is computed from the live geofence scan: in-ring paddy kg ÷ 29.85 kg/bag.
+3. The consumer nudge ("reserve early" vs "supply is comfortable") compares next-week forecast bags against that supply; the operator demand-outlook card renders the same data with an SVG sparkline.
+
+### 5. Relay route planning (`POST /api/routes`)
+1. Open orders (default: 8 nearest in-ring lots with deterministic loads) are assigned to their **nearest FPO hub** (`lib/demand-history.ts`: Tumkur, Ramanagara, Nelamangala).
+2. Per hub, `planRelayRoutes()` (`@farmit/logistics`) capacity-batches pickups (1200 kg/vehicle) into **nearest-neighbour + 2-opt** farm-gate tours, then one bulk line-haul per hub to the Jayanagar dark store (ADR-0007).
+3. The response reports consolidated vs one-truck-per-farmer distance and the food-miles-saved percentage (~50% on the demo batch); the operator "Logistics desk" view renders stop sequences.
 
 ## Pricing model (single source: `packages/pricing`)
 
@@ -72,6 +83,8 @@ The consumer receipt itemises every component — this is the product's core tru
 | Lot catalog | `lib/catalog.ts` in-memory array | Supabase `farm_lots` + PostGIS geography | ADR-0003, ADR-0004 |
 | Auth/sessions | localStorage demo session | Supabase email/password + `profiles.role` | schema + RLS already in `001_farmit_core.sql` |
 | Orders | in-memory demo handler | Supabase `orders` keyed to `quote_snapshots` | status enum already in schema |
+| Demand history | seeded 16-week demo series (`lib/demand-history.ts`) | real order history from `orders` | forecast API shape unchanged (ADR-0006) |
+| FPO hubs / routing | coordinates in `lib/demand-history.ts` + haversine 2-opt | PostGIS `ST_DWithin` hub assignment; OR-Tools for large batches | ADR-0007 swap point |
 | Geofence | haversine in JS over all lots | PostGIS `ST_DWithin` with spatial index | required beyond ~10k lots |
 | Payments/escrow | disabled | payment-gateway escrow + split settlement | Phase 3, needs partner decision |
 | Quote store | returned to client only | `quote_snapshots` table (immutable JSONB) | schema ready |

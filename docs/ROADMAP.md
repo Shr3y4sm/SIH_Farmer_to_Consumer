@@ -11,9 +11,10 @@ FarmIt is built in phases against **SIH 2026 problem statement 26033** ("Multipl
 | Transparent itemized pricing on every receipt | 0 | ✅ Quote snapshot + itemized breakdown |
 | MSP floor protection for farmers | 0 | ✅ Server-side guard, spoof-proof |
 | Farmer lot onboarding | 1 | ✅ Demo flow (auth-backed version in Phase 4) |
-| Logistics support / relay routing | 2 | 🚧 Static route concept only |
-| AI demand forecasting (explicit PS) | 2 | ❌ |
-| Route optimization (explicit PS) | 2 | ❌ |
+| Logistics support / relay routing | 2 | ✅ FPO-hub two-relay planner (NN + 2-opt), food-miles-saved metric, logistics desk UI |
+| AI demand forecasting (explicit PS) | 2 | ✅ Explainable weekly forecast (WMA + trend + seasonal index) with supply check |
+| Route optimization (explicit PS) | 2 | ✅ Consolidated relay routes; 49.7% food-miles saved on the demo batch |
+| FPO grouping | 2 | 🚧 Nearest-hub assignment derived from coordinates; operator-managed FPO entity pending |
 | Escrow payout split on delivery (deck step 4) | 3 | ❌ Payments disabled in v1 |
 | QR-code delivery handshake | 3 | ❌ |
 | Bulk buyers (B2B channel) | 3–4 | ❌ |
@@ -30,10 +31,10 @@ Monorepo, transparent quote engine (yield/MSP/snapshot immutability), three-role
 ### Phase 1 — Geofenced marketplace (v0.2.0) ✅
 Multi-farmer server-side catalog, 100 km geofence scan API, farmer lot onboarding, per-lot operator pricing, hardened server-owned quotes. Log: [`PHASE-1-marketplace.md`](phases/PHASE-1-marketplace.md)
 
-### Phase 2 — AI: forecasting & routing *(next)*
-1. **Demand forecasting** — per-variety weekly demand model from seeded historical orders (simple, explainable time-series first; no black box), surfaced as a chart + "order early" nudges.
-2. **Route optimization** — batch open orders into consolidated farm-gate pickup → FPO hub → urban dark store relays (nearest-neighbour first, OR-Tools if justified); display food-miles saved vs. traditional sourcing.
-3. FPO/producer-group entity in the catalog (farmers grouped under an FPO hub).
+### Phase 2 — AI: forecasting & routing (v0.3.0) ✅
+1. ✅ **Demand forecasting** — explainable weekly model (weighted MA + damped trend + seasonal index) from deterministic demo history; supply-vs-demand nudge for consumers; ADR-0006.
+2. ✅ **Route optimization** — FPO-hub two-relay plans (nearest-neighbour + 2-opt, capacity-batched) with food-miles-saved metrics and an operator logistics desk; ADR-0007.
+3. 🚧 FPO/producer-group entity in the catalog (nearest-hub assignment shipped; operator-managed grouping in Phase 4). Log: [`PHASE-2-ai-forecasting-routing.md`](phases/PHASE-2-ai-forecasting-routing.md)
 
 ### Phase 3 — Trust: escrow & delivery verification
 1. Simulated escrow ledger: on delivery confirmation, split the snapshot total into farmer / mill / transporter / platform entries.
@@ -49,6 +50,7 @@ Multi-farmer server-side catalog, 100 km geofence scan API, farmer lot onboardin
 
 ## Decision backlog (open questions)
 
-- Platform-fee model: flat ₹/order (v1) vs deck's 10% of farmer payout — decide before Phase 3.
+- Platform-fee model: flat ₹/order (v1) vs deck's 10% of farmer payout — **scheduled for Phase 3** (deferred from Phase 2 by decision, 2026-09-08).
 - Escrow partner: payment-gateway split settlement vs UPI-centric flow; compliance owner unclear — needed for Phase 3 credibility.
 - Mapping provider for consumer-facing distance/route visuals (demo uses pure numbers, no tiles).
+- Forecast cold-start policy for real deployments with < 8 weeks of history (`forecastDemand` currently requires two full seasonal cycles).

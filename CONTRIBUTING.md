@@ -29,7 +29,7 @@ No external services are required — the demo runs entirely on a seeded in-memo
 ## Conventions
 
 - **TypeScript strict mode** everywhere; shared types live in `packages/domain` only — never redeclare a record shape in an app or route.
-- **Layering:** `validation` and `domain` depend on nothing; `pricing` depends only on `domain`; apps/routes may import all packages. Never import `apps/web` code from a package.
+- **Layering:** `validation` and `domain` depend on nothing; `pricing` depends only on `domain`; `forecast` on `domain`; `logistics` on `pricing` + `domain`; apps/routes may import all packages. Never import `apps/web` code from a package.
 - **Server-owned state:** clients never send prices, payouts or quantities that the server trusts. Catalog lookups happen server-side (ADR-0002, ADR-0003).
 - **JSDoc** on every exported function of a package; `// TODO(phase-N):` markers for deferred work, referencing the roadmap.
 - **Conventional Commits** (`feat:`, `fix:`, `docs:`, `chore:`) — one logical change per commit.
