@@ -1,6 +1,7 @@
 import { calculateQuote } from "@farmit/pricing";
 import type { QuoteInput } from "@farmit/domain";
 import { findLot } from "../../../lib/catalog";
+import { saveSnapshot } from "../../../lib/snapshots";
 
 export async function POST(request: Request) {
   const body = (await request.json().catch(() => null)) as (QuoteInput & { lotId?: string }) | null;
@@ -13,6 +14,8 @@ export async function POST(request: Request) {
   const { lotId, ...input } = body;
   try {
     const quote = calculateQuote(lot, input);
+    // Persist server-side so escrow splits are computed from the immutable snapshot, never from client payloads.
+    saveSnapshot(quote);
     return Response.json(quote, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     return Response.json(
