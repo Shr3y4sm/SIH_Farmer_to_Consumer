@@ -32,3 +32,6 @@
  GET /api/auth/session 401 in 44ms
  POST /api/auth/login 200 in 113ms
  GET / 200 in 271ms
+ GET /login 200 in 130ms
+ ✓ Compiled /manifest.webmanifest in 272ms (329 modules)
+ GET /manifest.webmanifest 200 in 715ms
