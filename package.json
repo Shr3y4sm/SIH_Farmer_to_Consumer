@@ -3,8 +3,8 @@
   "private": true,
   "packageManager": "pnpm@9.15.5",
   "scripts": {
-    "dev": "corepack pnpm --filter web dev",
-    "build": "corepack pnpm --filter web build",
-    "typecheck": "corepack pnpm --filter web typecheck"
+    "dev": "pnpm --filter web dev",
+    "build": "pnpm --filter web build",
+    "typecheck": "pnpm --filter web typecheck"
   }
 }

@@ -13,6 +13,20 @@ Open `http://localhost:3000`. The prototype uses a seeded demo session so the co
 
 The production build and typecheck can be run with `corepack pnpm build` and `corepack pnpm typecheck`.
 
+## Authentication
+
+The prototype is gated by a basic email + password sign-in (`POST /api/auth/login`, `/login`). Sessions are stateless HMAC-signed tokens in an httpOnly cookie (`farmit_session`, expiry 7 days). Edge middleware enforces the gate — unauthenticated page requests redirect to `/login` (preserving the destination via `?next=`), and unauthenticated API calls get `401`; the `/api/auth/*` endpoints are always public. Sign out via `POST /api/auth/logout`.
+
+Seeded demo accounts (also shown on the login page, one-click):
+
+| Email | Password | Role |
+|---|---|---|
+| `consumer@farmit.in` | `consumer123` | consumer — shop the 20 kg weekly order, doorstep QR handoff |
+| `farmer@farmit.in` | `farmer123` | farmer — list harvest lots in the catalog |
+| `operator@farmit.in` | `operator123` | operator — publish quote snapshots, plan logistics |
+
+Passwords are stored as scrypt hashes with per-user salts in `apps/web/lib/users.ts` (demo seed; Supabase `auth.users` replaces it at pilot). Set `AUTH_SECRET` to a long random value in deployed environments — the code falls back to a dev-only demo secret so the seed works out of the box.
+
 ## Documentation
 
 | Doc | Read it for |
