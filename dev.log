@@ -1,0 +1,34 @@
+
+> farmit-v1@ dev D:\Code\SIH_Farmer_to_Consumer
+> pnpm --filter web dev
+
+
+> web@0.1.0 dev D:\Code\SIH_Farmer_to_Consumer\apps\web
+> next dev
+
+   ▲ Next.js 15.5.7
+   - Local:        http://localhost:3000
+   - Network:      http://192.168.1.2:3000
+
+ ✓ Starting...
+ ✓ Ready in 2.3s
+ ✓ Compiled /middleware in 384ms (115 modules)
+ ○ Compiling /login ...
+ ✓ Compiled /login in 1518ms (529 modules)
+ GET /login 200 in 2278ms
+ ✓ Compiled /api/auth/login in 480ms (552 modules)
+ POST /api/auth/login 200 in 790ms
+ ✓ Compiled /api/auth/session in 349ms (559 modules)
+ GET /api/auth/session 200 in 532ms
+ ✓ Compiled /api/lots in 314ms (564 modules)
+ GET /api/lots 200 in 399ms
+ ○ Compiling / ...
+ ✓ Compiled / in 789ms (573 modules)
+ GET / 200 in 1273ms
+ POST /api/auth/login 401 in 111ms
+ ○ Compiling /api/auth/logout ...
+ ✓ Compiled /api/auth/logout in 534ms (575 modules)
+ POST /api/auth/logout 200 in 628ms
+ GET /api/auth/session 401 in 44ms
+ POST /api/auth/login 200 in 113ms
+ GET / 200 in 271ms
