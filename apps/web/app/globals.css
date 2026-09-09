@@ -52,6 +52,26 @@ select:focus { border-color: var(--orange); }
 .stop-row strong { color: #54705f; font-weight: 600; font: 10px 'DM Mono', monospace; }
 @media (max-width: 850px) { .logistics-summary { grid-template-columns: 1fr 1fr; } }
 
+/* ── Guided farmer/operator workspaces ─────────────────────────── */
+.role-guide { display: grid; grid-template-columns: minmax(180px, .7fr) minmax(0, 1.3fr); gap: 18px; max-width: 940px; margin: -18px 0 20px; padding: 18px 20px; border: 1px solid #d8e3d1; background: #edf4e8; }
+.role-guide h3 { margin: 7px 0 0; font: 600 24px Fraunces, serif; }
+.role-guide-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.role-guide-step { display: flex; gap: 10px; min-height: 70px; padding: 11px; background: var(--paper); border: 1px solid #d8e3d1; }
+.role-guide-step > span { display: grid; place-items: center; flex: 0 0 auto; width: 25px; height: 25px; color: var(--paper); background: var(--orange); border-radius: 50%; font: 11px 'DM Mono', monospace; }
+.role-guide-step strong, .role-guide-step small { display: block; }
+.role-guide-step strong { font-size: 12px; }
+.role-guide-step small { margin-top: 5px; color: var(--ink-soft); font-size: 10px; line-height: 1.4; }
+.form-card label { font-size: 12px; }
+.form-card input, .form-card select { min-height: 46px; padding: 13px 12px; font-size: 15px; }
+.form-card .primary-button { min-height: 52px; margin-top: 12px; padding: 15px 16px; font-size: 14px; }
+.operator-aside { border-left: 4px solid var(--yellow); }
+.operator-layout .card-header { align-items: flex-start; }
+.operator-layout .card-header h2 { font-size: 27px; }
+.insight-card { border-left: 4px solid var(--yellow); }
+.notice { min-height: 48px; }
+@media (max-width: 850px) { .role-guide { grid-template-columns: 1fr; margin-top: -8px; } }
+@media (max-width: 600px) { .role-guide-steps { grid-template-columns: 1fr; } .role-guide-step { min-height: auto; } .form-card input, .form-card select { min-height: 50px; } }
+
 /* ── Phase 3: escrow audit ledger & QR handshake ────────────────── */
 .ledger-box { display: grid; gap: 8px; margin-top: 14px; padding: 13px; background: #f0eadb; border-top: 2px solid var(--orange); }
 .ledger-head { display: flex; justify-content: space-between; align-items: center; }
@@ -79,3 +99,76 @@ select:focus { border-color: var(--orange); }
 .demo-account b, .demo-account small { display: block; }
 .demo-account small { margin-top: 3px; color: var(--ink-soft); font: 10px/1.45 'DM Mono', monospace; }
 @media (max-width: 480px) { .auth-card { border: 0; } }
+
+/* ── FarmIt glow-up: a confident new chapter ────────────────────── */
+:root { --ink: #102f2b; --ink-soft: #5b716b; --cream: #f4f4ef; --paper: #fffefa; --line: #d8ddd5; --orange: #ee7253; --yellow: #f4c95d; --green: #d8ebc9; --shadow: 0 18px 45px rgba(16, 47, 43, .08); }
+body { background: #eef0ea; }
+.app-shell { background: linear-gradient(135deg, #f6f6f1 0%, #edf1e9 48%, #f4e9d7 100%); }
+.topbar { height: 76px; padding: 0 clamp(22px, 5vw, 76px); background: rgba(255, 254, 250, .78); border-bottom: 1px solid rgba(16, 47, 43, .1); backdrop-filter: blur(18px); }
+.brand { font-size: 23px; letter-spacing: -1px; }
+.brand-mark { width: 34px; height: 34px; box-shadow: 5px 5px 0 var(--yellow); }
+.topbar-actions { gap: 14px; font-size: 11px; }
+.topbar-actions .text-button { padding: 9px 11px; border-radius: 999px; }
+.topbar-actions .text-button:hover { color: var(--paper); background: var(--ink); }
+.hero { max-width: 1400px; margin: 0 auto; padding: clamp(50px, 7vw, 90px) clamp(28px, 8vw, 112px); border: 0; }
+.hero-copy { max-width: 680px; }
+.hero-copy .eyebrow { color: var(--orange); font-weight: 700; }
+h1 { margin-top: 18px; font-size: clamp(52px, 7vw, 94px); line-height: .9; letter-spacing: -4px; }
+h1 em { display: inline-block; padding: 0 8px 4px; color: var(--ink); background: var(--yellow); transform: rotate(-2deg); }
+.hero-copy p { max-width: 510px; margin-top: 27px; font-size: 17px; }
+.route-illustration { padding: 23px; border: 1px solid var(--ink); background: var(--ink); color: var(--paper); border-radius: 24px; box-shadow: 12px 12px 0 var(--orange); }
+.route-point strong { border-color: var(--yellow); }
+.route-point.destination strong { color: var(--ink); background: var(--yellow); }
+.route-label { top: 82px; color: var(--yellow); }
+.workspace { max-width: 1400px; min-height: 720px; border: 1px solid rgba(16, 47, 43, .1); border-radius: 28px 28px 0 0; overflow: hidden; background: rgba(255, 254, 250, .45); box-shadow: var(--shadow); }
+.sidebar { padding: 38px 28px; background: var(--ink); border-right: 0; color: var(--paper); }
+.sidebar .profile { border-bottom-color: rgba(255, 254, 250, .18); }
+.sidebar .profile strong { color: var(--paper); }
+.sidebar .profile span, .sidebar .side-note p { color: #a9c0b8; }
+.sidebar .avatar { color: var(--ink); background: var(--yellow); }
+.nav-item { border-radius: 12px; color: #b2c5bf; }
+.nav-item:hover { color: var(--paper); background: rgba(255, 254, 250, .08); }
+.nav-item.active { color: var(--ink); background: var(--yellow); }
+.side-note { margin-top: 120px; border-top-color: var(--orange); background: #234b43; border-radius: 14px; }
+.side-note strong { color: var(--paper); }
+.content { padding: 36px clamp(24px, 5vw, 70px) 64px; background: rgba(255, 254, 250, .52); }
+.role-switcher { margin-bottom: 34px; }
+.role-switcher .language { padding: 10px 15px; border-radius: 999px; background: var(--paper); font-weight: 600; }
+.page-heading { max-width: 760px; margin-bottom: 32px; }
+.page-heading h2 { font-size: clamp(38px, 4vw, 56px); letter-spacing: -1.8px; }
+.page-heading p { max-width: 560px; font-size: 15px; line-height: 1.6; }
+.card, .offer-card, .timeline-card, .demand-card, .route-card, .lot-card { border-color: rgba(16, 47, 43, .13); border-radius: 18px; box-shadow: 0 8px 22px rgba(16, 47, 43, .035); }
+.form-card, .offer-card, .timeline-card { padding: 30px; }
+.card-header { margin-bottom: 30px; }
+.card-header h2, .offer-top h2 { font-size: 29px; }
+.pill { border-radius: 999px; }
+.primary-button { min-height: 50px; border-radius: 10px; box-shadow: 5px 5px 0 var(--yellow); transition: transform .16s ease, box-shadow .16s ease, background .16s ease; }
+.primary-button:hover { background: var(--orange); transform: translate(-2px, -2px); box-shadow: 7px 7px 0 var(--ink); }
+.text-button { font-weight: 600; }
+input, select { border-radius: 10px; background: #f8faf5; }
+input:focus, select:focus { border-color: var(--orange); box-shadow: 0 0 0 4px rgba(238, 114, 83, .13); }
+.insight-card { border-radius: 18px; box-shadow: 10px 10px 0 var(--orange); }
+.operator-aside { border-radius: 18px; box-shadow: 10px 10px 0 var(--green); }
+.role-guide { border: 0; border-radius: 18px; box-shadow: var(--shadow); }
+.market-grid { gap: 16px; }
+.lot-card { padding: 19px; border-radius: 16px; transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease; }
+.lot-card:hover { border-color: var(--orange); transform: translateY(-4px); box-shadow: 0 12px 20px rgba(16, 47, 43, .1); }
+.lot-card.selected { border-width: 2px; box-shadow: 6px 6px 0 var(--orange); transform: translateY(-3px); }
+.distance-badge { font-weight: 700; }
+.offer-card { box-shadow: 9px 9px 0 var(--green); }
+.rice-stamp { box-shadow: 4px 4px 0 var(--yellow); }
+.price-line { border-bottom-color: var(--orange); }
+.price-line strong { font-size: 35px; }
+.timeline-card { background: var(--ink); color: var(--paper); border: 0; }
+.timeline-card .eyebrow { color: var(--yellow); }
+.timeline-item small { color: #b7cbc4; }
+.timeline-dot { background: var(--ink); border-color: #77958b; }
+.timeline-item:not(:last-child)::after { background: #46685f; }
+.notice { border-radius: 12px; box-shadow: 0 5px 14px rgba(16, 47, 43, .05); }
+footer { background: var(--ink); color: #a9c0b8; border-top: 0; }
+.auth-shell { background: linear-gradient(135deg, var(--ink) 0%, #214f46 62%, var(--orange) 100%); }
+.auth-card { border: 0; border-radius: 22px; box-shadow: 14px 14px 0 var(--yellow); }
+.auth-card .brand-mark { box-shadow: none; }
+.demo-account { border-radius: 10px; }
+@media (max-width: 850px) { .hero { padding: 52px 7vw 42px; } .workspace { border-radius: 22px 22px 0 0; } .content { padding: 30px 6vw 52px; } .sidebar { display: none; } }
+@media (max-width: 480px) { h1 { letter-spacing: -2.5px; } .hero-copy p { font-size: 15px; } .content { padding-inline: 5vw; } .form-card, .offer-card, .timeline-card { padding: 22px; } .primary-button { box-shadow: 4px 4px 0 var(--yellow); } }
