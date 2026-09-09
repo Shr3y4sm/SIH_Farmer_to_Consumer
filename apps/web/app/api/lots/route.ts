@@ -2,6 +2,9 @@ import { GEOFENCE_RADIUS_KM, filterLotsWithinGeofence } from "@farmit/pricing";
 import { assertAvailableQuantity, assertCoordinates, assertFloorPayout } from "@farmit/validation";
 import type { FarmLot } from "@farmit/domain";
 import { CONSUMER_HUBS, addLot, listLots, nextLotId } from "../../../lib/catalog";
+import { getSessionUser } from "../../../lib/session";
+
+export const dynamic = "force-dynamic";
 
 function parseOrigin(request: Request) {
   const url = new URL(request.url);
@@ -29,6 +32,8 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const user = await getSessionUser(request);
+  if (user?.role !== "farmer") return Response.json({ error: "Only farmer accounts can list produce." }, { status: 403 });
   const body = (await request.json().catch(() => null)) as Omit<FarmLot, "id"> | null;
   if (!body) return Response.json({ error: "A lot payload is required." }, { status: 400 });
 

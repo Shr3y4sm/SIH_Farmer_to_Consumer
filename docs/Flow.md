@@ -10,9 +10,10 @@ Default demo economics (Shivanna's lot): farmer ₹728.64 + mill ₹80 + freight
     corepack pnpm install
     corepack pnpm dev        # http://localhost:3000
 
-No services, accounts, or network needed — the demo runs on seeded in-memory
-data and browser localStorage. Roles are switched via the "Signed in as"
-switcher; language via the ಕನ್ನಡ / English button.
+No remote services are needed, but the demo is authentication-gated. Use the
+seeded `farmer@farmit.in`, `operator@farmit.in`, and `consumer@farmit.in`
+accounts on the login screen; sign out and sign in as the next role. Language
+is toggled via the ಕನ್ನಡ / English button.
 
 ---
 
@@ -42,7 +43,7 @@ PASS: all of the above, and no layout break at mobile width (≤480px).
 5. Click publish again → button reads "Publish replacement snapshot".
 6. Switch the dropdown to a different farm → button reverts to
    "Publish fixed snapshot" (snapshots are per-lot).
-7. GST variant: set GST 5%, publish → total ₹1,044.93; consumer receipt and
+7. GST variant: enter GST 5%, publish → total ₹1,044.93; consumer receipt and
    audit ledger gain a GST ₹45.43 row. Reset GST to 0 afterwards.
 PASS: server-computed totals; fee always exactly 10% of subtotal.
 
@@ -94,8 +95,8 @@ requires the code.
 4. Negative tests (client blocks, no request sent):
    quantity 10 OR floor ₹18 → "Lot needs at least 29.85 kg and a ₹24.41/kg
    minimum payout."; empty farmer name → name-required notice.
-PASS: new lot survives page refresh within the session (in-memory catalog
-resets on server restart — documented behaviour).
+PASS: new lot survives page refresh and Next development hot reloads within the
+session (the demo catalog still resets on a full server restart).
 
 ## Flow 6 — Cross-cutting checks
 
@@ -105,7 +106,7 @@ resets on server restart — documented behaviour).
   stay latin. Toggle back.
 - **Account panel:** shows role, storage, geofence info, "Disabled in v1"
   payments; **Clear demo session and restart** returns to farmer view clean.
-- **Restart caveat (by design):** after a server restart, an in-flight browser
+- **Restart caveat (by design):** after a full server restart, an in-flight browser
   escrow release fails closed with "No escrow is held for this snapshot." —
   the documented demo/pilot seam.
 

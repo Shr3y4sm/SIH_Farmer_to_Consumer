@@ -8,7 +8,8 @@ import { findSnapshot } from "./snapshots";
  * payment-gateway escrow/split settlement — the record shape is the contract.
  */
 
-const escrow = new Map<string, EscrowRecord>();
+const runtime = globalThis as typeof globalThis & { __farmitEscrow?: Map<string, EscrowRecord> };
+const escrow = (runtime.__farmitEscrow ??= new Map<string, EscrowRecord>());
 
 const round2 = (value: number) => Math.round(value * 100) / 100;
 

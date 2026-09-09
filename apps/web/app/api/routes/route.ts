@@ -2,8 +2,11 @@ import { planRelayRoutes, type PickupOrder } from "@farmit/logistics";
 import { filterLotsWithinGeofence } from "@farmit/pricing";
 import { CONSUMER_HUBS, listLots } from "../../../lib/catalog";
 import { DARK_STORE, FPO_HUBS, SEED_PICKUP_LOADS_KG } from "../../../lib/demand-history";
+import { getSessionUser } from "../../../lib/session";
 
 export async function POST(request: Request) {
+  const user = await getSessionUser(request);
+  if (user?.role !== "operator") return Response.json({ error: "Only operator accounts can plan logistics." }, { status: 403 });
   const body = (await request.json().catch(() => null)) as { orders?: PickupOrder[] } | null;
   const hub = CONSUMER_HUBS[0];
 

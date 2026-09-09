@@ -9,7 +9,9 @@ corepack pnpm install
 corepack pnpm dev
 ```
 
-Open `http://localhost:3000`. The prototype uses a seeded demo session so the complete farmer → operator → consumer path can be exercised without credentials or a remote Supabase project. Switch roles from **View as**. The operator generates the server-owned quote snapshot per farm lot; the consumer can then reserve or decline it.
+Open `http://localhost:3000`. Sign in with one of the seeded demo accounts to exercise the complete farmer → operator → consumer path without a remote Supabase project. Sign out and switch accounts between stages. The operator generates the server-owned quote snapshot per farm lot; the consumer can then reserve or decline it.
+
+If the catalog API is unavailable, the consumer screen automatically falls back to local seeded demo lots and a local price/escrow preview so the frontend remains clickable before a real backend or database is connected. Live listing, quote publication, and persistence still require the API routes.
 
 The production build and typecheck can be run with `corepack pnpm build` and `corepack pnpm typecheck`.
 
@@ -42,7 +44,7 @@ Passwords are stored as scrypt hashes with per-user salts in `apps/web/lib/users
 ## Workspace shape
 
 - `apps/web`: Next.js PWA shell, demo workflows, route handlers, and the seeded lot catalog (`lib/catalog.ts`)
-- `apps/web/lib/catalog.ts`: multi-farmer lot catalog (in-memory; Supabase replaces it at pilot)
+- `apps/web/lib/catalog.ts`: multi-farmer lot catalog (demo in-memory; retained across Next dev hot reloads, Supabase replaces it at pilot)
 - `packages/domain`: shared records and role/status contracts
 - `packages/pricing`: server-side yield conversion, rupee rounding, quote calculation, and 100 km haversine geofence
 - `packages/forecast`: explainable weekly demand forecasting (weighted MA + trend + seasonal index)
@@ -57,12 +59,15 @@ The current API route handlers are intentionally demo-local. Before a pilot, rep
 ## Marketplace API
 
 - `GET /api/lots?lat=…&lng=…` — server-side geofence scan. Returns every catalog lot annotated with `distanceKm` and `withinGeofence` (100 km radius, nearest first) plus `outsideCount` for lots the food-miles guardrail hides. Without query params it scans from the Jayanagar hub.
-- `POST /api/lots` — lists a new farmer lot. Validates the MSP floor (₹24.41/kg), the 29.85 kg minimum (20 kg rice at 67% yield), and the coordinates server-side.
-- `POST /api/quote` — publishes a fixed snapshot for a `lotId`. The lot is resolved from the server-side catalog, so clients cannot spoof farmer payouts; unknown lots return 404.
-- `GET /api/escrow` / `POST /api/escrow` — escrow lifecycle (`hold` | `dispatch` | `release`) keyed to published snapshots; release requires the doorstep delivery code.
+- `POST /api/lots` — farmer-only lot listing. Validates the MSP floor (₹24.41/kg), the 29.85 kg minimum (20 kg rice at 67% yield), and coordinates server-side.
+- `GET/POST /api/marketplace/orders` — consumer order requests linked to a selected farmer lot. A request records rice quantity, delivery preference/notes, and a `requested` status for the operator workflow.
+- `GET/POST /api/quote` — consumers read the latest published snapshot for a `lotId`; operators publish or replace it. The lot is resolved from the server-side catalog, so clients cannot spoof farmer payouts; unknown or expired snapshots cannot be reserved.
+- `GET /api/escrow` / `POST /api/escrow` — consumer-only escrow lifecycle (`hold` | `dispatch` | `release`) keyed to published snapshots; release requires the doorstep delivery code.
 - `GET /api/escrow/qr?code=…` — server-rendered SVG QR for the doorstep handshake.
 - `GET /api/forecast?horizon=1..4` — explainable weekly demand forecast (history, point + confidence band, method metadata) plus the geofenced supply check that powers the consumer nudge.
 - `POST /api/routes` — consolidated FPO-hub relay plan for open orders (farm-gate pickup tours + one bulk line-haul per hub) with consolidated-vs-individual food-miles metrics; accepts an explicit `orders[]` override.
+
+Operator GST is entered in the UI as a percentage (for example, `5` means 5%); the API and pricing engine store it as a decimal fraction (`0.05`).
 
 ## Pricing guardrails
 

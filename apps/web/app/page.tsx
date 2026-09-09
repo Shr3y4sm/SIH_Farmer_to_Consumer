@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { ConsumerLocation, EscrowRecord, FarmLot, GeofenceLot, OrderStatus, QuoteInput, QuoteSnapshot, Role } from "@farmit/domain";
+import { calculateQuote } from "@farmit/pricing";
 import { translations, type Locale } from "@farmit/translations";
 
 type Decision = "accepted" | "declined" | null;
@@ -12,10 +13,16 @@ type RelayStop = { kind: "farm" | "hub" | "store"; id: string; label: string; lo
 type RelayRouteView = { hubId: string; hubLabel: string; pickupStops: RelayStop[]; pickupKm: number; lineHaulKm: number; loadKg: number };
 type RelayPlanResponse = { destination: { label: string }; orderCount: number; routes: RelayRouteView[]; totalKm: number; individualKm: number; savedKm: number; savedPercent: number; method: string };
 type Account = { name: string; email: string; role: Role };
+type ConsumerOrderRequest = { id: string; lotId: string; farmerName: string; consumerName: string; riceKg: number; deliveryNote: string; status: "requested"; createdAt: string };
 
 const demoKey = "farmit-demo-state";
 const consumerHub: ConsumerLocation = { id: "hub_jayanagar", label: "Jayanagar, Bengaluru", latitude: 12.9308, longitude: 77.5838 };
 const initialLot: FarmLot = { id: "lot_tumkur_01", farmerName: "Shivanna", village: "Huliyurdurga, Tumkur", variety: "Sona Masuri", quantityKg: 680, floorPayoutPerKg: 24.41, harvestDate: "2026-09-02", qualityNote: "Clean grain · 13% moisture · locally harvested", latitude: 12.95, longitude: 76.9 };
+const offlineLots: GeofenceLot[] = [
+  { ...initialLot, distanceKm: 77.8, withinGeofence: true },
+  { id: "lot_tumkur_02", farmerName: "Lakshmamma", village: "Kunigal, Tumkur", variety: "Sona Masuri", quantityKg: 540, floorPayoutPerKg: 24.9, harvestDate: "2026-09-04", qualityNote: "Freshly threshed · sun-dried · single-plot lot", latitude: 13.02, longitude: 77.03, distanceKm: 60.8, withinGeofence: true },
+  { id: "lot_blr_01", farmerName: "Prakash", village: "Nelamangala, Bengaluru Rural", variety: "Sona Masuri", quantityKg: 720, floorPayoutPerKg: 24.55, harvestDate: "2026-09-07", qualityNote: "Closest to the city hub · low food miles", latitude: 13.1, longitude: 77.39, distanceKm: 28.2, withinGeofence: true },
+];
 const draftLotTemplate: Omit<FarmLot, "id"> = { farmerName: "", village: "Huliyurdurga, Tumkur", variety: "Sona Masuri", quantityKg: 500, floorPayoutPerKg: 24.41, harvestDate: "2026-09-15", qualityNote: "Freshly harvested paddy", latitude: 12.95, longitude: 76.9 };
 const villageOptions = [
   { village: "Huliyurdurga, Tumkur", latitude: 12.95, longitude: 76.9 },
@@ -53,6 +60,10 @@ export default function Home() {
   const [notice, setNotice] = useState("");
   const [demand, setDemand] = useState<ForecastResponse | null>(null);
   const [relayPlan, setRelayPlan] = useState<RelayPlanResponse | null>(null);
+  const [offlineMode, setOfflineMode] = useState(false);
+  const [consumerRequest, setConsumerRequest] = useState<ConsumerOrderRequest | null>(null);
+  const [requestedRiceKg, setRequestedRiceKg] = useState(20);
+  const [deliveryNote, setDeliveryNote] = useState("");
   const copy = translations[locale];
 
   const selectedLot = catalog.find((item) => item.id === selectedLotId) ?? null;
@@ -97,13 +108,46 @@ export default function Home() {
 
   async function refreshCatalog() {
     try {
-      const response = await fetch(`/api/lots?lat=${consumerHub.latitude}&lng=${consumerHub.longitude}`);
+      const response = await fetch(`/api/lots?lat=${consumerHub.latitude}&lng=${consumerHub.longitude}`, { cache: "no-store" });
       if (!response.ok) throw new Error();
       const data = (await response.json()) as MarketplaceResponse;
       setCatalog(data.lots);
+      setOfflineMode(false);
       return data.lots;
-    } catch { setNotice("The marketplace catalog could not be loaded. Refresh to try again."); return null; }
+    } catch {
+      setCatalog(offlineLots);
+      setOfflineMode(true);
+      return offlineLots;
+    }
   }
+
+  function selectConsumerLot(lotId: string) {
+    setSelectedLotId(lotId);
+    setQuote(null);
+    setDecision(null);
+    setOrderStatus(null);
+    setEscrow(null);
+    setConsumerRequest(null);
+  }
+
+  useEffect(() => {
+    if (role !== "consumer" || offlineMode || !selectedLotId) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const response = await fetch(`/api/quote?lotId=${encodeURIComponent(selectedLotId)}`, { cache: "no-store" });
+        if (cancelled) return;
+        if (!response.ok) {
+          setQuote((current) => current?.lotId === selectedLotId ? null : current);
+          return;
+        }
+        setQuote((await response.json()) as QuoteSnapshot);
+      } catch {
+        if (!cancelled) setNotice("The published offer could not be loaded. Try refreshing the marketplace.");
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [role, offlineMode, selectedLotId]);
 
   useEffect(() => {
     void refreshCatalog();
@@ -148,14 +192,55 @@ export default function Home() {
     } catch (error) { setNotice(error instanceof Error ? error.message : "Quote could not be generated. Check the operator inputs and try again."); } finally { setLoading(false); }
   }
 
-  async function escrowAction(action: "hold" | "dispatch", quoteId: string) {
-    try {
-      const response = await fetch("/api/escrow", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ quoteId, action }) });
-      if (response.ok) setEscrow((await response.json()) as EscrowRecord);
-    } catch { /* escrow is optional in the demo */ }
+  function previewLocalQuote() {
+    if (!selectedLot) return;
+    setQuote(calculateQuote(selectedLot, initialQuote));
+    setDecision(null);
+    setOrderStatus(null);
+    setEscrow(null);
+    setNotice("Local demo preview loaded. Connect the backend for operator-published snapshots and live reservations.");
   }
 
-  async function submitDecision(nextDecision: Exclude<Decision, null>) { if (!liveQuote) return; setLoading(true); try { const response = await fetch("/api/orders", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ quoteId: liveQuote.id, decision: nextDecision }) }); if (!response.ok) throw new Error(); setDecision(nextDecision); setOrderStatus(nextDecision === "accepted" ? "reserved" : null); if (nextDecision === "accepted") await escrowAction("hold", liveQuote.id); setNotice(nextDecision === "accepted" ? "Reservation confirmed. The escrow is holding (simulated) — see the audit ledger." : "Offer declined. The price snapshot remains unchanged."); } catch { setNotice("That decision could not be saved. Try again."); } finally { setLoading(false); } }
+  async function submitConsumerRequest() {
+    if (!selectedLot) return;
+    setLoading(true);
+    try {
+      const response = await fetch("/api/marketplace/orders", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ lotId: selectedLot.id, riceKg: requestedRiceKg, deliveryNote }) });
+      const result = (await response.json().catch(() => null)) as ConsumerOrderRequest & { error?: string } | null;
+      if (!response.ok) throw new Error(result?.error ?? "The request could not be submitted.");
+      setConsumerRequest(result as ConsumerOrderRequest);
+      setNotice(`Request sent to ${selectedLot.farmerName}. The operator can now prepare a transparent offer.`);
+    } catch (error) {
+      if (offlineMode) {
+        const localRequest: ConsumerOrderRequest = { id: `local_${Date.now()}`, lotId: selectedLot.id, farmerName: selectedLot.farmerName, consumerName: account?.name ?? "Demo consumer", riceKg: requestedRiceKg, deliveryNote, status: "requested", createdAt: new Date().toISOString() };
+        setConsumerRequest(localRequest);
+        setNotice(`Local demo request sent to ${selectedLot.farmerName}.`);
+      } else setNotice(error instanceof Error ? error.message : "The request could not be submitted.");
+    } finally { setLoading(false); }
+  }
+
+  function localEscrow(snapshot: QuoteSnapshot): EscrowRecord {
+    return {
+      quoteId: snapshot.id,
+      lotId: snapshot.lotId,
+      total: snapshot.total,
+      status: "held",
+      heldAt: new Date().toISOString(),
+      dispatchedAt: null,
+      releasedAt: null,
+      deliveryCode: null,
+      split: { farmer: snapshot.paddyPayout, miller: snapshot.milling + snapshot.packagingQa, transporters: snapshot.farmToMill + snapshot.lineHaul + snapshot.lastMile, platform: snapshot.platformCharge, tax: snapshot.tax },
+    };
+  }
+
+  async function escrowAction(action: "hold" | "dispatch", quoteId: string) {
+    const response = await fetch("/api/escrow", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ quoteId, action }) });
+    const record = (await response.json().catch(() => null)) as (EscrowRecord & { error?: string }) | null;
+    if (!response.ok) throw new Error(record?.error ?? "The escrow action could not be completed.");
+    setEscrow(record as EscrowRecord);
+  }
+
+  async function submitDecision(nextDecision: Exclude<Decision, null>) { if (!liveQuote) return; setLoading(true); try { const response = await fetch("/api/orders", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ quoteId: liveQuote.id, decision: nextDecision }) }); const result = (await response.json().catch(() => null)) as { error?: string } | null; if (!response.ok) throw new Error(result?.error ?? "That decision could not be saved."); if (nextDecision === "accepted") await escrowAction("hold", liveQuote.id); setDecision(nextDecision); setOrderStatus(nextDecision === "accepted" ? "reserved" : null); setNotice(nextDecision === "accepted" ? "Reservation confirmed. The escrow is holding (simulated) — see the audit ledger." : "Offer declined. The price snapshot remains unchanged."); } catch (error) { if (offlineMode) { setDecision(nextDecision); setOrderStatus(nextDecision === "accepted" ? "reserved" : null); if (nextDecision === "accepted") setEscrow(localEscrow(liveQuote)); setNotice(nextDecision === "accepted" ? "Local demo reservation confirmed. Connect the backend for a live order." : "Offer declined in the local demo."); } else setNotice(error instanceof Error ? error.message : "That decision could not be saved. Try again."); } finally { setLoading(false); } }
 
   async function advanceDelivery() {
     if (!orderStatus || orderStatus === "delivered") return;
@@ -163,6 +248,12 @@ export default function Home() {
     const nextStatus = next[orderStatus];
     setLoading(true);
     try {
+      if (offlineMode && liveQuote) {
+        setOrderStatus(nextStatus);
+        if (nextStatus === "in_transit" && escrow) setEscrow({ ...escrow, status: "in_transit", dispatchedAt: new Date().toISOString(), deliveryCode: "FARMIT-OFFLINE" });
+        setNotice(nextStatus === "in_transit" ? "Local demo dispatch complete. The offline QR handshake is ready." : `Delivery advanced to ${statusLabel(nextStatus)}.`);
+        return;
+      }
       const response = await fetch("/api/orders", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ quoteId: liveQuote?.id, status: nextStatus }) });
       if (!response.ok) throw new Error();
       setOrderStatus(nextStatus);
@@ -175,11 +266,18 @@ export default function Home() {
     if (!liveQuote || !escrow?.deliveryCode) return;
     setLoading(true);
     try {
+      if (offlineMode) {
+        setEscrow({ ...escrow, status: "released", releasedAt: new Date().toISOString() });
+        setOrderStatus("delivered");
+        setNotice("Local demo QR handshake verified. Escrow released (simulated). Connect the backend for live settlement.");
+        return;
+      }
       const response = await fetch("/api/escrow", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ quoteId: liveQuote.id, action: "release", code: escrow.deliveryCode }) });
       const record = (await response.json()) as EscrowRecord & { error?: string };
       if (!response.ok) throw new Error(record.error ?? "The QR handshake failed.");
       setEscrow(record);
-      await fetch("/api/orders", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ quoteId: liveQuote.id, status: "delivered" }) });
+      const orderResponse = await fetch("/api/orders", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ quoteId: liveQuote.id, status: "delivered" }) });
+      if (!orderResponse.ok) throw new Error("The delivery status could not be updated.");
       setOrderStatus("delivered");
       setNotice("QR handshake verified. Escrow released — farmer, miller, transporters and platform paid (simulated).");
     } catch (error) { setNotice(error instanceof Error ? error.message : "The QR handshake failed."); } finally { setLoading(false); }
@@ -191,7 +289,10 @@ export default function Home() {
     <section className="hero"><div className="hero-copy"><span className="eyebrow">MARKETPLACE 01 · TUMKUR → JAYNAGAR</span><h1>Good rice starts<br /><em>with a fair start.</em></h1><p>A working demo marketplace: many farms inside a 100 km sourcing ring, one transparent household order.</p></div><div className="route-illustration" aria-label="Route from Tumkur to Jaynagar"><div className="route-point"><strong>T</strong><span>Tumkur</span></div><div className="route-line"><i /><i /><i /></div><div className="route-point destination"><strong>J</strong><span>Jayanagar</span></div><span className="route-label">one weekly run</span></div></section>
     <div className="workspace"><aside className="sidebar"><div className="profile"><div className="avatar">{role === "farmer" ? "S" : role === "operator" ? "O" : "A"}</div><div><strong>{role === "farmer" ? "Shivanna" : role === "operator" ? "FarmIt team" : "Ananya Rao"}</strong><span>{copy[role]}</span></div></div><nav><button className={`nav-item ${view === "overview" ? "active" : ""}`} onClick={() => setView("overview")}><span>◈</span> Overview</button><button className={`nav-item ${view === "workspace" ? "active" : ""}`} onClick={() => setView("workspace")}><span>□</span> {workspaceLabel}</button>{role === "operator" && <button className={`nav-item ${view === "logistics" ? "active" : ""}`} onClick={() => setView("logistics")}><span>⬡</span> Logistics</button>}<button className={`nav-item ${view === "account" ? "active" : ""}`} onClick={() => setView("account")}><span>◇</span> Account</button></nav><div className="side-note"><span className="tiny-sun">✦</span><strong>Small batch,<br />clear numbers.</strong><p>Saved locally for this demo. Supabase replaces this store when the pilot is connected.</p></div></aside>
       <section className="content"><div className="role-switcher"><button className="language" onClick={() => setLocale(locale === "en" ? "kn" : "en")}>{locale === "en" ? "ಕನ್ನಡ" : "English"}</button></div>
-        {view === "logistics" && role === "operator" ? <LogisticsPanel plan={relayPlan} demand={demand} /> : view === "account" ? <AccountPanel role={role} user={account} onReset={resetDemo} onSignOut={signOut} /> : role === "farmer" ? <FarmerPanel draft={draftLot} setDraft={setDraftLot} onSave={saveLot} loading={loading} /> : role === "operator" ? <OperatorPanel lots={nearbyLots} selectedLotId={selectedLotId} onSelectLot={setSelectedLotId} input={quoteInput} setInput={setQuoteInput} onGenerate={generateQuote} loading={loading} quote={quote} demand={demand} onOpenLogistics={() => setView("logistics")} /> : <ConsumerPanel lots={nearbyLots} outsideCount={outsideCount} selectedLotId={selectedLotId} onSelectLot={setSelectedLotId} selectedLot={selectedLot} quote={liveQuote} hasSnapshot={Boolean(quote)} decision={decision} orderStatus={orderStatus} onDecision={submitDecision} onAdvance={advanceDelivery} onConfirmHandoff={confirmHandoff} loading={loading} copy={copy} demand={demand} escrow={escrow} />}
+        {view === "logistics" && role === "operator" ? <LogisticsPanel plan={relayPlan} demand={demand} /> : view === "account" ? <AccountPanel role={role} user={account} onReset={resetDemo} onSignOut={signOut} /> : role === "farmer" ? <FarmerPanel draft={draftLot} setDraft={setDraftLot} onSave={saveLot} loading={loading} /> : role === "operator" ? <OperatorPanel lots={nearbyLots} selectedLotId={selectedLotId} onSelectLot={setSelectedLotId} input={quoteInput} setInput={setQuoteInput} onGenerate={generateQuote} loading={loading} quote={quote} demand={demand} onOpenLogistics={() => setView("logistics")} /> : <ConsumerPanel lots={nearbyLots} outsideCount={outsideCount} selectedLotId={selectedLotId} onSelectLot={selectConsumerLot} selectedLot={selectedLot} quote={liveQuote} hasSnapshot={Boolean(quote)} onPreview={offlineMode ? previewLocalQuote : undefined} decision={decision} orderStatus={orderStatus} onDecision={submitDecision} onAdvance={advanceDelivery} onConfirmHandoff={confirmHandoff} loading={loading} copy={copy} demand={demand} escrow={escrow} />}
+        {role === "consumer" && view === "workspace" && <ConsumerOrderComposer lot={selectedLot} riceKg={requestedRiceKg} setRiceKg={setRequestedRiceKg} deliveryNote={deliveryNote} setDeliveryNote={setDeliveryNote} request={consumerRequest} onSubmit={submitConsumerRequest} loading={loading} />}
+        {offlineMode && role === "consumer" && selectedLot && !liveQuote && <button className="primary-button" onClick={previewLocalQuote}>Preview local demo price <span>→</span></button>}
+        {offlineMode && <div className="notice"><span>◌</span>Local demo data · connect the backend to publish and reserve live orders.</div>}
         {notice && <div className="notice"><span>✓</span>{notice}</div>}
       </section>
     </div><footer><span>FarmIt v1 prototype</span><span>Illustrative demo data · No payment or fulfilment</span><span>Privacy &amp; safety</span></footer>
@@ -203,11 +304,16 @@ function FarmerPanel({ draft, setDraft, onSave, loading }: { draft: Omit<FarmLot
 }
 
 function OperatorPanel({ lots, selectedLotId, onSelectLot, input, setInput, onGenerate, loading, quote, demand, onOpenLogistics }: { lots: GeofenceLot[]; selectedLotId: string; onSelectLot: (lotId: string) => void; input: QuoteInput; setInput: (input: QuoteInput) => void; onGenerate: () => void; loading: boolean; quote: QuoteSnapshot | null; demand: ForecastResponse | null; onOpenLogistics: () => void }) {
-  const field = (key: keyof QuoteInput, label: string, suffix = "₹") => <label>{label}<div className="input-with-prefix"><span>{suffix}</span><input type="number" value={input[key]} onChange={(e) => setInput({ ...input, [key]: Number(e.target.value) })} /></div></label>;
+  const field = (key: keyof QuoteInput, label: string, suffix = "₹") => { const percent = key === "taxRate"; return <label>{label}<div className="input-with-prefix"><span>{suffix}</span><input type="number" min="0" max={percent ? "100" : undefined} step={percent ? "0.1" : "0.01"} value={percent ? input[key] * 100 : input[key]} onChange={(e) => setInput({ ...input, [key]: Number(e.target.value) / (percent ? 100 : 1) })} /></div></label>; };
   return <><PageHeading kicker="02 / OPERATIONS DESK" title="Build the weekly run" description="Pick a listed farm lot and publish the internal costs. The published snapshot is what the consumer sees." /><div className="operator-layout"><div className="card form-card"><div className="card-header"><div><span className="card-label">ACTIVE RUN · SAT 12 SEP</span><h2>Cost inputs</h2></div><span className={`pill ${quote ? "green" : "amber"}`}>{quote ? "Published" : "Needs quote"}</span></div><label>Lot to price<select value={selectedLotId} onChange={(e) => onSelectLot(e.target.value)}>{lots.map((item) => <option key={item.id} value={item.id}>{item.farmerName} · {item.village} · {item.distanceKm} km</option>)}</select></label><div className="form-row">{field("millingPerKg", "Milling / rice kg")}{field("packagingQaPerKg", "Packaging + QA / rice kg")}</div><div className="form-row">{field("farmToMill", "Farm → mill")}{field("weeklyLineHaul", "Weekly line-haul")}</div><div className="form-row">{field("lastMile", "Jaynagar last mile")}{field("taxRate", "GST rate", "%")}</div><div className="form-row">{field("expiresInHours", "Snapshot valid for", "h")}</div><button className="primary-button" onClick={onGenerate} disabled={loading || !selectedLotId}>{loading ? "Publishing…" : quote && quote.lotId === selectedLotId ? "Publish replacement snapshot" : "Publish fixed snapshot"}<span>→</span></button>{quote && <p className="muted form-footnote">Published total for {lots.find((item) => item.id === quote.lotId)?.farmerName ?? quote.lotId}: <strong>{money(quote.total)}</strong> · expires {new Date(quote.expiresAt).toLocaleString()}</p>}</div><div className="operator-aside"><span className="eyebrow">GUARDRAIL</span><h2>Server-owned pricing</h2><p>Operators enter partner costs. The server looks up the lot, applies yield, the MSP floor payout, the 10% platform fee and GST, then freezes the snapshot and the escrow split.</p><div className="rule"><span>01</span><b>Yield conversion</b><small>20 kg rice needs 29.85 kg paddy at 67% yield.</small></div><div className="rule"><span>02</span><b>MSP floor</b><small>No lot is priced below ₹24.41/kg.</small></div><div className="rule"><span>03</span><b>10% fee + escrow</b><small>FarmIt earns 10% of cost of goods + logistics; the split releases on QR handoff.</small></div></div></div>{demand && <div className="demand-card"><div className="demand-head"><div><span className="eyebrow">DEMAND OUTLOOK · {demand.origin}</span><h2>Weekly 20 kg bag demand</h2></div><span className="pill green">{demand.supplyBags} bags supply nearby</span></div><Sparkline history={demand.history.map((point) => point.bags)} forecast={demand.forecast.map((point) => point.bags)} /><div className="demand-stats"><div><b>~{demand.forecast[0]?.bags ?? "—"}<small> next wk</small></b><span>{demand.forecast[0]?.low}–{demand.forecast[0]?.high} range</span></div><div><b>{demand.trendPerWeek > 0 ? "+" : ""}{demand.trendPerWeek}</b><span>bags/week trend</span></div><div><b>±{demand.mapePct}%</b><span>model error (MAPE)</span></div><div><b>{demand.forecast.reduce((sum, point) => sum + point.bags, 0)}</b><span>bags in 4-week horizon</span></div></div><p className="muted">Method: {demand.method} · deterministic demo history, labelled illustrative. Solid line: observed weeks. Dashed: forecast.</p><button className="text-button" onClick={onOpenLogistics}>Open the logistics desk to plan this week&apos;s relays →</button></div>}</>;
 }
 
-function ConsumerPanel({ lots, outsideCount, selectedLotId, onSelectLot, selectedLot, quote, hasSnapshot, decision, orderStatus, onDecision, onAdvance, onConfirmHandoff, loading, copy, demand, escrow }: { lots: GeofenceLot[]; outsideCount: number; selectedLotId: string; onSelectLot: (lotId: string) => void; selectedLot: GeofenceLot | null; quote: QuoteSnapshot | null; hasSnapshot: boolean; decision: Decision; orderStatus: OrderStatus | null; onDecision: (decision: Exclude<Decision, null>) => void; onAdvance: () => void; onConfirmHandoff: () => void; loading: boolean; copy: (typeof translations)[Locale]; demand: ForecastResponse | null; escrow: EscrowRecord | null }) {
+function ConsumerOrderComposer({ lot, riceKg, setRiceKg, deliveryNote, setDeliveryNote, request, onSubmit, loading }: { lot: GeofenceLot | null; riceKg: number; setRiceKg: (value: number) => void; deliveryNote: string; setDeliveryNote: (value: string) => void; request: ConsumerOrderRequest | null; onSubmit: () => void; loading: boolean }) {
+  if (!lot) return null;
+  return <div className="card form-card order-composer"><div className="card-header"><div><span className="card-label">START A CONSUMER REQUEST</span><h2>Request from {lot.farmerName}</h2></div><span className={`pill ${request?.lotId === lot.id ? "green" : "amber"}`}>{request?.lotId === lot.id ? "Request sent" : "Choose quantity"}</span></div><p className="muted">Describe what you need. The operator will use this request to publish a fixed, itemized offer.</p><div className="form-row"><label>Rice quantity (kg)<input type="number" min="1" max="100" step="1" value={riceKg} onChange={(event) => setRiceKg(Number(event.target.value))} /></label><label>Delivery preference<input value="Jayanagar · Saturday morning" readOnly /></label></div><label>Order note (optional)<input value={deliveryNote} maxLength={240} onChange={(event) => setDeliveryNote(event.target.value)} placeholder="e.g. Please use a cloth bag; call on arrival" /></label>{request?.lotId === lot.id ? <div className="notice"><span>✓</span>Request #{request.id} is queued for {request.farmerName} · {request.riceKg} kg rice.</div> : <button className="primary-button" onClick={onSubmit} disabled={loading || riceKg < 1 || riceKg > 100}>{loading ? "Sending…" : "Send request to this farm"}<span>→</span></button>}</div>;
+}
+
+function ConsumerPanel({ lots, outsideCount, selectedLotId, onSelectLot, selectedLot, quote, hasSnapshot, onPreview, decision, orderStatus, onDecision, onAdvance, onConfirmHandoff, loading, copy, demand, escrow }: { lots: GeofenceLot[]; outsideCount: number; selectedLotId: string; onSelectLot: (lotId: string) => void; selectedLot: GeofenceLot | null; quote: QuoteSnapshot | null; hasSnapshot: boolean; onPreview?: () => void; decision: Decision; orderStatus: OrderStatus | null; onDecision: (decision: Exclude<Decision, null>) => void; onAdvance: () => void; onConfirmHandoff: () => void; loading: boolean; copy: (typeof translations)[Locale]; demand: ForecastResponse | null; escrow: EscrowRecord | null }) {
   const statusIndex = orderStatus ? (["reserved", "milling", "in_transit", "delivered"] as OrderStatus[]).indexOf(orderStatus) : -1;
   return <><PageHeading kicker="03 / MARKETPLACE" title={copy.offer} description={`${copy.chooseFarmer} — every rupee on the receipt is accounted for.`} /><div className="market-bar"><h2>{copy.marketplace}</h2><span>{lots.length} farms {copy.within} · {consumerHub.label}</span></div><div className="market-grid">{lots.map((item) => <button key={item.id} className={`lot-card ${item.id === selectedLotId ? "selected" : ""}`} onClick={() => onSelectLot(item.id)}><span className="distance-badge">{item.distanceKm} km</span><strong>{item.farmerName}</strong><small>{item.village} · harvested {item.harvestDate}</small><small>{item.qualityNote}</small><span className="lot-meta"><span>{item.quantityKg} kg paddy</span><b>₹{item.floorPayoutPerKg.toFixed(2)}/kg floor</b></span></button>)}</div>{outsideCount > 0 && <p className="geofence-note">◈ {outsideCount} lots hidden — outside the 100 km sourcing ring (food-miles guardrail).</p>}{demand && (() => { const next = demand.forecast[0]; if (!next) return null; const tight = next.bags > demand.supplyBags; return <p className={`demand-note ${tight ? "tight" : "ok"}`}>◈ Demand outlook: ~{next.bags} bags expected next week ({next.low}–{next.high}) · {demand.supplyBags} bags of paddy supply within 100 km{tight ? " — reserve early." : " — supply is comfortable."}</p>; })()}<div className="consumer-layout"><div className="offer-card">{quote && selectedLot ? <><div className="offer-top"><div><span className="card-label">SONA MASURI · 20 KG</span><h2>From {selectedLot.farmerName}&apos;s farm</h2><p>{selectedLot.village} · Harvested {selectedLot.harvestDate} · {selectedLot.distanceKm} km away</p></div><div className="rice-stamp">SM<span>20kg</span></div></div><div className="price-line"><span>Your total</span><strong>{money(quote.total)}</strong></div><div className="breakdown"><PriceRow label={`Farmer payout · ${quote.paddyKg} kg paddy`} value={quote.paddyPayout} /><PriceRow label="Milling" value={quote.milling} /><PriceRow label="Packaging + quality check" value={quote.packagingQa} /><PriceRow label="Farm → mill transport" value={quote.farmToMill} /><PriceRow label="Weekly route + last mile" value={quote.lineHaul + quote.lastMile} /><PriceRow label="FarmIt fee · 10%" value={quote.platformCharge} />{quote.tax > 0 && <PriceRow label="GST" value={quote.tax} />}<div className="yield-note">ⓘ 20 kg rice needs {quote.paddyKg} kg paddy at {quote.yieldRate * 100}% documented yield.</div></div><div className="delivery-row"><span className="calendar-icon">▣</span><div><b>Scheduled delivery</b><small>{quote.weeklyRun} · Jaynagar</small></div><span className="pill green">Fixed snapshot</span></div>{decision === "accepted" ? <div className="reserved-box"><strong>Reserved · {statusLabel(orderStatus ?? "reserved")}</strong><span>No payment has been taken. The escrow ledger below tracks every rupee until the doorstep handoff.</span><div className="ledger-box"><div className="ledger-head"><b>Audit ledger · escrow</b><span className={`pill ${escrow?.status === "released" ? "green" : "amber"}`}>{escrowStatusLabel(escrow)}</span></div><div className="ledger-row"><span>Farmer · {selectedLot.farmerName}</span><strong>{money(escrow?.split?.farmer ?? quote.paddyPayout)}</strong></div><div className="ledger-row"><span>Local miller (milling + QA)</span><strong>{money(escrow?.split?.miller ?? quote.milling + quote.packagingQa)}</strong></div><div className="ledger-row"><span>Transporters (relay + line-haul)</span><strong>{money(escrow?.split?.transporters ?? quote.farmToMill + quote.lineHaul + quote.lastMile)}</strong></div><div className="ledger-row"><span>FarmIt platform fee (10%)</span><strong>{money(escrow?.split?.platform ?? quote.platformCharge)}</strong></div>{quote.tax > 0 && <div className="ledger-row"><span>GST</span><strong>{money(escrow?.split?.tax ?? quote.tax)}</strong></div>}<div className="ledger-row total"><span>Escrow total</span><strong>{money(escrow?.total ?? quote.total)}</strong></div></div>{escrow?.status === "in_transit" && escrow.deliveryCode ? <><div className="qr-box"><img src={`/api/escrow/qr?code=${encodeURIComponent(escrow.deliveryCode)}`} alt={`Delivery QR code ${escrow.deliveryCode}`} /><div><strong>Doorstep QR handshake</strong><small>Code: {escrow.deliveryCode}</small><small>Scanning confirms the handoff and releases the escrow split.</small></div></div><button className="primary-button" onClick={onConfirmHandoff} disabled={loading}>{loading ? "Verifying…" : "Simulate courier scan · release escrow"} <span>→</span></button></> : escrow?.status === "released" ? <span>✓ Escrow released — farmer, miller, transporters and platform paid (simulated).</span> : <button className="primary-button" onClick={onAdvance} disabled={loading}>{(orderStatus ?? "reserved") === "delivered" ? "Delivered" : "Advance delivery"} <span>→</span></button>}</div> : decision === "declined" ? <div className="declined-box"><strong>Offer declined</strong><span>The price snapshot remains unchanged for this weekly run.</span></div> : <div className="offer-actions"><button className="primary-button" onClick={() => onDecision("accepted")} disabled={loading}>{copy.reserve}</button><button className="text-button" onClick={() => onDecision("declined")} disabled={loading}>{copy.decline}</button></div>}</> : <div className="empty-offer"><span className="empty-icon">◍</span><h3>{hasSnapshot ? "Snapshot is for another farm" : "No published snapshot yet"}</h3><p>Select a farm above{hasSnapshot ? " to see its published snapshot." : ", then ask the operator to publish this week's fixed price."}</p></div>}</div><div className="timeline-card"><span className="eyebrow">DELIVERY WEEK · SAT</span><h2>How it reaches you</h2><TimelineItem active={statusIndex >= 0} title="Reserved" detail="Snapshot fixed · escrow slot created" /><TimelineItem active={statusIndex >= 1} title="Milling &amp; packing" detail="Local micro-mill · 67% documented yield" /><TimelineItem active={statusIndex >= 2} title="On the road" detail={`Farm relay from ${selectedLot?.village ?? "the farm"} · ${selectedLot ? selectedLot.distanceKm : "—"} km`} /><TimelineItem active={statusIndex >= 3} title="Delivered" detail="Doorstep handoff in Jaynagar" /></div></div></>;
 }

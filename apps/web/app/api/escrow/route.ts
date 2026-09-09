@@ -1,4 +1,5 @@
 import { dispatchEscrow, findEscrow, holdEscrow, releaseEscrow } from "../../../lib/escrow";
+import { getSessionUser } from "../../../lib/session";
 
 export async function GET(request: Request) {
   const quoteId = new URL(request.url).searchParams.get("quoteId");
@@ -9,6 +10,8 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const user = await getSessionUser(request);
+  if (user?.role !== "consumer") return Response.json({ error: "Only consumer accounts can operate the demo escrow." }, { status: 403 });
   const body = (await request.json().catch(() => null)) as { quoteId?: string; action?: "hold" | "dispatch" | "release"; code?: string } | null;
   if (!body?.quoteId || !body.action) {
     return Response.json({ error: "A quoteId and action (hold | dispatch | release) are required." }, { status: 400 });

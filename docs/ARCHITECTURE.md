@@ -6,7 +6,7 @@ FarmIt is a farmer-to-consumer marketplace for staple grains. This document desc
 
 ```
                  ┌────────────────────────── Browser (PWA) ──────────────────────────┐
-                 │  apps/web/app/page.tsx — role-switched demo shell                  │
+                 │  apps/web/app/page.tsx — authenticated role shell                 │
                  │  consumer: farm grid + offer receipt | operator: cost inputs       │
                  │  farmer: lot onboarding | state persisted in localStorage          │
                  └──────────────┬───────────────────────────────┬─────────────────────┘
@@ -18,7 +18,7 @@ FarmIt is a farmer-to-consumer marketplace for staple grains. This document desc
                  └──────────────┬───────────────┘ └─────────────┬───────────────┘
                                 │                               │
                  ┌──────────────▼───────────────────────────────▼───────────────┐
-                 │ apps/web/lib/catalog.ts — in-memory lot catalog (14 seeds)   │
+                 │ apps/web/lib/catalog.ts — process-local lot catalog (14 seeds)│
                  │   ◇ DEMO ONLY — replaced by Supabase farm_lots at pilot      │
                  └───────────────────────────────────────────────────────────────┘
                  ┌───────────────────────────────────────────────────────────────┐
@@ -51,6 +51,10 @@ Rules (enforced by convention, see `CONTRIBUTING.md`): `domain` and `validation`
 2. The route resolves the lot from the server-side catalog (ADR-0002). Client-supplied payout fields are ignored — spoof attempts are provably ineffective.
 3. `calculateQuote()` applies: 20 kg rice ÷ 67% yield → 29.85 kg paddy; farmer payout = paddy kg × max(lot floor, ₹24.41 MSP); adds milling, packaging/QA, farm→mill, line-haul, last-mile, platform charge, tax; rounds in rupees; stamps `createdAt`/`expiresAt` (snapshot valid 48 h by default) and a fixed weekly run window.
 4. The snapshot is **immutable after publication** — the consumer receipt renders exactly what the operator published.
+
+Write endpoints are role-gated in the demo: farmers list lots, operators publish quotes and plan
+routes, and consumers reserve offers and operate the simulated escrow. All authenticated roles can
+read the marketplace and forecast views.
 
 ### 3. Order lifecycle (`POST/PATCH /api/orders`, demo-local)
 `reserved → milling → in_transit → delivered`. Reservations create no payment; delivery advance is simulated. The escrow split + QR verification from the pitch are Phase 3 (see `docs/ROADMAP.md`).
@@ -94,6 +98,6 @@ The consumer receipt itemises every component — this is the product's core tru
 | FPO hubs / routing | coordinates in `lib/demand-history.ts` + haversine 2-opt | PostGIS `ST_DWithin` hub assignment; OR-Tools for large batches | ADR-0007 swap point |
 | Geofence | haversine in JS over all lots | PostGIS `ST_DWithin` with spatial index | required beyond ~10k lots |
 | Payments/escrow | disabled | payment-gateway escrow + split settlement | Phase 3, needs partner decision |
-| Quote store | returned to client only | `quote_snapshots` table (immutable JSONB) | schema ready |
+| Quote store | process-local immutable map + browser copy for the demo UI | `quote_snapshots` table (immutable JSONB) | persisted server-side since Phase 3 |
 
 Anything replacing demo-local behaviour must preserve two invariants: **the quote snapshot stays immutable**, and **validation runs server-side**.

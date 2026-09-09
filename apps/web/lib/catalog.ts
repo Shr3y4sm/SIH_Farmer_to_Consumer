@@ -24,8 +24,14 @@ const seedLots: FarmLot[] = [
   { id: "lot_out_03", farmerName: "Nagaraj", village: "Tiptur, Tumkur", variety: "Sona Masuri", quantityKg: 980, floorPayoutPerKg: 25.0, harvestDate: "2026-09-03", qualityNote: "Coconut-belt farm · outside the 100 km ring", latitude: 13.26, longitude: 76.48 },
 ];
 
-/** Demo-local in-memory catalog. Supabase farm_lots replaces this when the pilot connects. */
-const catalog: FarmLot[] = [...seedLots];
+/**
+ * Demo-local catalog. Keep the array on globalThis so Next's development
+ * hot-reload can re-evaluate this module without wiping lots that were just
+ * added through the farmer form. Supabase farm_lots replaces this when the
+ * pilot connects.
+ */
+const runtime = globalThis as typeof globalThis & { __farmitCatalog?: FarmLot[] };
+const catalog = (runtime.__farmitCatalog ??= [...seedLots]);
 
 export function listLots(): FarmLot[] {
   return catalog;

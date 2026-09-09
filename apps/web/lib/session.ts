@@ -19,6 +19,16 @@ export const SESSION_COOKIE = "farmit_session";
 /** Seven days; the demo marketplace is a weekly cycle so this outlives a single run. */
 export const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
 
+export async function getSessionUser(request: Request): Promise<SessionUser | null> {
+  const cookieHeader = request.headers.get("cookie") ?? "";
+  const token = cookieHeader
+    .split(";")
+    .map((part) => part.trim())
+    .find((part) => part.startsWith(`${SESSION_COOKIE}=`))
+    ?.slice(SESSION_COOKIE.length + 1);
+  return verifySessionToken(token);
+}
+
 /** Dev fallback. Set AUTH_SECRET to a long random string for any deployed environment. */
 const SESSION_SECRET = process.env.AUTH_SECRET ?? "farmit-demo-auth-secret-change-me";
 
