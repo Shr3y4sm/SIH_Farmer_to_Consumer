@@ -76,3 +76,5 @@ The demo uses a 67% documented milling yield and a ₹24.41/kg 2026–27 common-
 ## Pricing guardrails
 
 The demo uses a 67% documented milling yield and a ₹24.41/kg 2026–27 common-paddy MSP reference. A 20 kg rice offer therefore requires 29.85 kg of paddy before milling, packaging, logistics, platform charge, or tax. All visible seed figures are labelled illustrative demo data in the UI.
+
+Comapany
